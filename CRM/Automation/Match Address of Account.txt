@@ -1,0 +1,13 @@
+//Parameters: Int accId, String Billing_Street, String Billing_Country, String Billing_State, String Billing_Code, String Billing_City
+rec = zoho.crm.getRecordById("Accounts",acctId);
+mp = Map();
+mp.put("Mailing_Street",ifnull(rec.get("Billing_Street"),""));
+mp.put("Mailing_City",ifnull(rec.get("Billing_City"),""));
+mp.put("Mailing_State",ifnull(rec.get("Billing_State"),""));
+mp.put("Mailing_Zip",ifnull(rec.get("Billing_Code"),""));
+mp.put("Mailing_Country",ifnull(rec.get("Billing_Country"),""));
+relCon = zoho.crm.getRelatedRecords("Contacts","Accounts",acctId);
+for each  con in relCon
+{
+	upd = zoho.crm.updateRecord("Contacts",con.get("id"),mp);
+}

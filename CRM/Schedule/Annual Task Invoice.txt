@@ -1,0 +1,58 @@
+orgID = 718355910;
+//----------ITEM IDs
+taskItemID = "2292063000001308024";
+//---------/ITEM IDS
+x = 0;
+itr = {1,2,3,4,5,6,7};
+for each  i in itr
+{
+	//bookContacts = zoho.books.getRecords("contacts",orgID,"page=" + i + "&per_page=200&cf_account_type=Member").getJSON("contacts");
+	bookContacts = zoho.books.getRecords("contacts",orgID,"page=" + i + "&per_page=200&cf_account_type=Member","zohobooks").getJSON("contacts");
+	for each  contact in bookContacts
+	{
+		crmDetail = zoho.crm.getRecordById("Accounts",contact.get("cf_crm_id"));
+		if(!isnull(crmDetail))
+		{
+			if(crmDetail.get("Account_Type") == "Member" && crmDetail.get("TASK_Member"))
+			{
+				dataMap = Map();
+				itemsMap = Map();
+				dueAmount = 0;
+				dataMap.put("recurrence_name","TASK Invoice for " + crmDetail.get("Account_Name") + " - " + year(now));
+				dataMap.put("customer_id",contact.get("contact_id"));
+				dataMap.put("end_date",year(now) + "-12-31");
+				//			info crmDetail;
+				contactCRM = zoho.crm.getRelatedRecords("Contacts","Accounts",crmDetail.get("id"));
+				dataMap.put("email",contactCRM.get(0).get("Email"));
+				payGatewayCol = Collection();
+				payOption = Map();
+				payGatewayMap = Map();
+				payGatewayMap.put("gateway_name","wepay");
+				payGatewayMap.put("configured",true);
+				payGatewayCol.insert(payGatewayMap);
+				payOption.put("payment_gateways",payGatewayCol);
+				dataMap.put("payment_options",payOption);
+				dataMap.put("recurrence_frequency","years");
+				accountName = crmDetail.get("Account_Name");
+				itemsMap.put("item_id",taskItemID);
+				mapSize = itemsMap.size();
+				if(mapSize > 0)
+				{
+					itemsMap = itemsMap.ToJSONList();
+					dataMap.put("line_items",itemsMap);
+					// 					info dataMap;
+					//createInvoice = zoho.books.createRecord("RecurringInvoices",orgID,dataMap);
+					createInvoice = zoho.books.createRecord("RecurringInvoices",orgID,dataMap,"zohobooks");
+					if(createInvoice.get("code") == 0)
+					{
+						//item = zoho.books.getRecordsByID("items",orgID,taskItemID).getJSON("item");
+						item = zoho.books.getRecordsByID("items",orgID,taskItemID,"zohobooks").getJSON("item");
+						crmUpdateMap = Map();
+						crmUpdateMap.put("TASK_Dues",item.get("rate"));
+						crmUpdate = zoho.crm.updateRecord("Accounts",crmDetail.get("id"),crmUpdateMap);
+					}
+				}
+			}
+		}
+	}
+}

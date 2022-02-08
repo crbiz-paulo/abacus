@@ -1,0 +1,7 @@
+void ClosedWon(int id)
+{
+	dateToday = today;
+	referral = Add_Referral[Referral_ID == id];
+	referral.Status="Closed Won";
+	referral.Date_of_Closure=today;
+}

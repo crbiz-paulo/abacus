@@ -1,0 +1,12 @@
+users = zoho.crm.getRecords("Contacts");
+usersJSON = users.toJSONList();
+for each  user in usersJSON
+{
+	if(input.Referrer == user.get("Full_Name"))
+	{
+		input.Referrer_ID = user.get("Email");
+		account = user.get("Account_Name");
+		account = account.get("name");
+		input.Referrer_Firm = account;
+	}
+}

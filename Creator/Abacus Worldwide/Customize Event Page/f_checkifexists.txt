@@ -1,0 +1,26 @@
+delete from Customize_event_page[ID = Custom_event_page_id.toNumber()];
+mycollection = Collection();
+data = zoho.crm.getRelatedRecords("Contacts","Campaigns",4302424000005024001);
+for each  sx in data
+{
+	id = sx.get('id');
+	image = sx.get('Record_Image');
+	full_name = sx.get('Full_Name');
+	mycollection.insert(full_name:sx);
+}
+mycollection.sortkey(false);
+for each  z in mycollection
+{
+	zfname = z.get('Full_Name').toList(" ");
+	for each  nd in zfname
+	{
+		if(!isNull(nd))
+		{
+			vlastName = nd;
+		}
+	}
+	info z.get('Full_Name');
+	info vlastName;
+}
+//info mycollection;
+cancel submit;

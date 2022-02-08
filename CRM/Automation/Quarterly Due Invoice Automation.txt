@@ -1,0 +1,225 @@
+//Parameters: Int accountId
+orgID = 718355910;
+//----------Constants
+ONEMILLION = 1000000.00;
+SIXMILLION = 6000000.00;
+TWENTYMILLION = 20000000.00;
+TAXPERCENT = 0.0010;
+TAXPERCENT2 = 0.0005;
+MAXIMUMDUE = 14000.00;
+FIVEKDUE = 5000.00;
+MINIMUMDUE = 2000.00;
+annualFee = 0;
+//----------ITEM IDs
+duesItemID = "2292063000001308037";
+taskItemID = "2292063000001308024";
+initialItemID = "2292063000001308015";
+regionID = "";
+worldID = "2292063000001308055";
+emeaID = "2292063000001308046";
+northID = "2292063000001308110";
+latinID = "2292063000001308089";
+asiaID = "2292063000001308119";
+nextYear = year(now) + 1;
+lastMonth = today.getMonth() - 1;
+if(lastMonth < 10)
+{
+	lastMonth = "0" + lastMonth;
+}
+monthNow = today.getMonth();
+info nextYear;
+info lastMonth;
+info monthNow;
+//worldFee = zoho.books.getRecordsByID("items",orgID,worldID).getJSON("item").get("rate");
+worldFee = zoho.books.getRecordsByID("items",orgID,worldID,"zohobooks").getJSON("item").get("rate");
+info worldFee;
+//---------/ITEM IDS
+//bookContacts = zoho.books.getRecords("contacts",orgID,"page=" + i + "&per_page=200&cf_account_type=Member").getJSON("contacts");
+//bookContacts = zoho.books.getRecords("contacts",orgID,"cf_crm_id=" + accountId).getJSON("contacts");
+bookContacts = zoho.books.getRecords("contacts",orgID,"cf_crm_id=" + accountId,"zohobooks").getJSON("contacts");
+info bookContacts;
+for each  contact in bookContacts
+{
+	if(contact.get("cf_crm_id") == accountId)
+	{
+		crmDetail = zoho.crm.getRecordById("Accounts",contact.get("cf_crm_id"));
+		if(!isnull(crmDetail) && monthNow != 12)
+		{
+			regionFee = 0;
+			if(crmDetail.get("Region") == "EMEA")
+			{
+				//regionFee = zoho.books.getRecordsByID("items",orgID,emeaID).getJSON("item").get("rate");
+				regionFee = zoho.books.getRecordsByID("items",orgID,emeaID,"zohobooks").getJSON("item").get("rate");
+				regionID = emeaID;
+			}
+			if(crmDetail.get("Region") == "Latin America")
+			{
+				//regionFee = zoho.books.getRecordsByID("items",orgID,latinID).getJSON("item").get("rate");
+				regionFee = zoho.books.getRecordsByID("items",orgID,latinID,"zohobooks").getJSON("item").get("rate");
+				regionID = latinID;
+			}
+			if(crmDetail.get("Region") == "North America")
+			{
+				//regionFee = zoho.books.getRecordsByID("items",orgID,northID).getJSON("item").get("rate");
+				regionFee = zoho.books.getRecordsByID("items",orgID,northID,"zohobooks").getJSON("item").get("rate");
+				regionID = northID;
+			}
+			if(crmDetail.get("Region") == "Asia Pacific")
+			{
+				//regionFee = zoho.books.getRecordsByID("items",orgID,asiaID).getJSON("item").get("rate");
+				regionFee = zoho.books.getRecordsByID("items",orgID,asiaID,"zohobooks").getJSON("item").get("rate");
+				regionID = asiaID;
+			}
+			annualRevenue = crmDetail.get("Annual_Revenue");
+			dataMap = Map();
+			itemMap = Collection();
+			membershipMap = Map();
+			regionMap = Map();
+			worldMap = Map();
+			regionAmount = 0;
+			worldAmount = 0;
+			dueAmount = 0;
+			memAmount = 0;
+			dataMap.put("recurrence_name","Membership Invoice for " + crmDetail.get("Account_Name") + " - " + year(now));
+			dataMap.put("customer_id",contact.get("contact_id"));
+			dataMap.put("end_date",year(now) + "-11-30");
+			membershipMap.put("item_id",duesItemID);
+			if(crmDetail.get("Flat_Rate_Dues"))
+			{
+				dueAmount = MINIMUMDUE + regionFee;
+				memAmount = MINIMUMDUE;
+				regionMap.put("item_id",regionID);
+			}
+			else
+			{
+				if(annualRevenue <= ONEMILLION)
+				{
+					dueAmount = MINIMUMDUE + regionFee + worldFee;
+					memAmount = MINIMUMDUE;
+					regionMap.put("item_id",regionID);
+					worldMap.put("item_id",worldID);
+				}
+				//Update to > 20
+				if(annualRevenue > TWENTYMILLION)
+				{
+					dueAmount = MAXIMUMDUE + regionFee + worldFee;
+					memAmount = MAXIMUMDUE;
+					regionMap.put("item_id",regionID);
+					worldMap.put("item_id",worldID);
+				}
+				if(annualRevenue > ONEMILLION && annualRevenue <= SIXMILLION)
+				{
+					dueAmount = (annualRevenue - ONEMILLION) * TAXPERCENT + MINIMUMDUE + regionFee + worldFee;
+					memAmount = (annualRevenue - ONEMILLION) * TAXPERCENT + MINIMUMDUE;
+					regionMap.put("item_id",regionID);
+					worldMap.put("item_id",worldID);
+				}
+				if(annualRevenue > SIXMILLION && annualRevenue <= TWENTYMILLION)
+				{
+					dueAmount = (annualRevenue - SIXMILLION) * TAXPERCENT2 + FIVEKDUE + MINIMUMDUE + regionFee + worldFee;
+					memAmount = (annualRevenue - SIXMILLION) * TAXPERCENT2 + FIVEKDUE + MINIMUMDUE;
+					info memAmount;
+					regionMap.put("item_id",regionID);
+					worldMap.put("item_id",worldID);
+				}
+			}
+			contact = zoho.crm.getRelatedRecords("Contacts","Accounts",accountId);
+			dataMap.put("email",contact.get(0).get("Email"));
+			payGatewayCol = Collection();
+			payOption = Map();
+			payGatewayMap = Map();
+			payGatewayMap.put("gateway_name","wepay");
+			payGatewayMap.put("configured",true);
+			payGatewayCol.insert(payGatewayMap);
+			payOption.put("payment_gateways",payGatewayCol);
+			dataMap.put("payment_options",payOption);
+			//-----------Pro Rate
+			if(monthNow > 2 && monthNow <= 5)
+			{
+				memAmount = memAmount * 0.75;
+				memAmount = memAmount / 3;
+				if(!isempty(regionMap))
+				{
+					regionAmount = regionFee * 0.75;
+					regionAmount = regionAmount / 3;
+					regionMap.put("rate",regionAmount);
+				}
+				if(!isempty(worldMap))
+				{
+					worldAmount = worldFee * 0.75;
+					worldAmount = worldAmount / 3;
+					worldMap.put("rate",worldAmount);
+				}
+			}
+			if(monthNow > 5 && monthNow <= 8)
+			{
+				memAmount = memAmount * 0.50;
+				memAmount = memAmount / 2;
+				if(!isempty(regionMap))
+				{
+					regionAmount = regionFee * 0.50;
+					regionAmount = regionAmount / 2;
+					regionMap.put("rate",regionAmount);
+				}
+				if(!isempty(worldMap))
+				{
+					worldAmount = worldFee * 0.50;
+					worldAmount = worldAmount / 2;
+					worldMap.put("rate",worldAmount);
+				}
+			}
+			if(monthNow > 8 && monthNow <= 11)
+			{
+				memAmount = memAmount * 0.25;
+				if(!isempty(regionMap))
+				{
+					regionAmount = regionFee * 0.25;
+					regionMap.put("rate",regionAmount);
+				}
+				if(!isempty(worldMap))
+				{
+					worldAmount = worldFee * 0.25;
+					worldMap.put("rate",worldAmount);
+				}
+			}
+			//-----------End of Pro Rate
+			annualFee = dueAmount;
+			dataMap.put("recurrence_frequency","months");
+			dataMap.put("repeat_every","3");
+			membershipMap.put("rate",memAmount);
+			itemMap.insert(membershipMap);
+			if(!isempty(regionMap))
+			{
+				itemMap.insert(regionMap);
+			}
+			if(!isempty(worldMap))
+			{
+				itemMap.insert(worldMap);
+			}
+			itemMap = itemMap.toJsonList();
+			dataMap.put("line_items",itemMap);
+			info dataMap;
+			//			createInvoice = zoho.books.createRecord("RecurringInvoices",orgID,dataMap);
+			createInvoice = zoho.books.createRecord("RecurringInvoices",orgID,dataMap,"zohobooks");
+			info createInvoice;
+			if(createInvoice.get("code") == 0)
+			{
+				crmUpdateMap = Map();
+				crmUpdateMap.put("Regional_Meeting_Dues",regionFee);
+				crmUpdateMap.put("Annual_Conference_Dues",worldFee);
+				crmUpdateMap.put("Dues",annualFee);
+				info crmUpdateMap;
+				crmUpdate = zoho.crm.updateRecord("Accounts",crmDetail.get("id"),crmUpdateMap);
+				crmTagMap = Map();
+				crmTagMap.put("tag_names","Updated - Invoice");
+				crmRemoveTag = invokeurl
+				[
+					url :"https://www.zohoapis.com/crm/v2/accounts/" + accountId + "/actions/remove_tags"
+					type :POST
+					parameters:crmTagMap
+					connection:"crmconnect"
+				];
+			}
+		}
+	}
+}

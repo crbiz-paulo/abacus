@@ -1,0 +1,46 @@
+//Parameters: Int contactId
+updateMap = Map();
+contact = zoho.crm.getRecordById("Contacts",contactId);
+account = contact.get("Account_Name");
+contactName = "";
+contactEmail = "";
+primaryContact = "";
+primaryContactEmail = "";
+hasPrimary = 0;
+contactCount = 0;
+nullAccount = isnull(account);
+if(!nullAccount)
+{
+	accId = account.get("id");
+	relatedRecs = zoho.crm.getRelatedRecords("Contacts","Accounts",accId);
+	if(!relatedRecs.isEmpty())
+	{
+		for each  res in relatedRecs
+		{
+			if(res.get("Is_Primary_Contact"))
+			{
+				primaryContact = res.get("Full_Name");
+				primaryContactEmail = res.get("Email");
+				hasPrimary = hasPrimary + 1;
+			}
+			else
+			{
+				contactName = res.get("Full_Name");
+				contactEmail = res.get("Email");
+			}
+			contactCount = contactCount + 1;
+		}
+	}
+	if(hasPrimary != 0)
+	{
+		updateMap.put("MVP_Email",primaryContactEmail);
+		updateMap.put("MVP_Full_Name",primaryContact);
+		update = zoho.crm.updateRecord("Accounts",accId,updateMap);
+	}
+	else if(contactCount != 0)
+	{
+		updateMap.put("MVP_Email",contactEmail);
+		updateMap.put("MVP_Full_Name",contactName);
+		update = zoho.crm.updateRecord("Accounts",accId,updateMap);
+	}
+}

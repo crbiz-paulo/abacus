@@ -1,0 +1,4 @@
+//Parameters: Int accountId
+updateMap = Map();
+updateMap.put("Global_CRM_ID",accountId.toString());
+update = zoho.crm.updateRecord("accounts",accountId,updateMap);

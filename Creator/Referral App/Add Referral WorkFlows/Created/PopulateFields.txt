@@ -1,0 +1,71 @@
+loggedInUser = zoho.crm.searchRecords("Contacts","(Email:equals:" + zoho.loginuserid + ")");
+listUsers = List();
+loop = {8,9,10,11,12,13,14};
+testcount = Contacts1[Added_User == zoho.loginuser];
+info testcount.count();
+// for each  x in loop
+// {
+// 	users = zoho.crm.getRecords("Contacts",x,200,{"cvid":4302424000010267003}).toJsonList();
+// 	for each  user in users
+// 	{
+// 		newUser = insert into Contacts1
+// [
+// 	Added_User=zoho.loginuser
+// 	Zoho_CRM_ID=user.get("id")
+// 	Full_Name=user.get("First_Name") + " " + user.get("Last_Name")
+// 	Contact_Type=user.get("Contact_Type")
+// 	Email=user.get("Email")
+// ];
+// 	}
+//}
+// for each  x in loop
+// {
+// }
+// if(loggedInUser.size() > 0)
+// {
+// 	if(loggedInUser.get(0).get("Connect_Admin"))
+// 	{
+// 		users = Contacts1[ID != 0] sort by Full_Name;
+// 	}
+// 	else
+// 	{
+// 		users = Contacts1[Contact_Type == "Member"] sort by Full_Name;
+// 	}
+// }
+// else
+// {
+// 	users = Contacts1[Contact_Type == "Member"] sort by Full_Name;
+// }
+// info users.count(Zoho_CRM_ID);
+// for each  user in users
+// {
+// 	// 		if(user.get("Contact_Type") == "Member")
+// 	// 		{
+// 	input.Referee:ui.add(user.Full_Name);
+// 	input.Referrer:ui.add(user.Full_Name);
+// 	// 		listUsers.add(user.Full_Name);
+// 	if(input.Referrer_ID == user.Email)
+// 	{
+// 		input.Referrer = user.Full_Name;
+// 		// 			account = user.get("Account_Name");
+// 		// 			account = account.get("name");
+// 		// 			input.Referrer_Firm = account;
+// 	}
+// 	if(!isnull(input.Referee_ID))
+// 	{
+// 		RefereeID = zoho.encryption.base64Decode(input.Referee_ID);
+// 		if(RefereeID == user.Email)
+// 		{
+// 			input.Referee = user.Full_Name;
+// 		}
+// 	}
+// 	//		}
+// }
+// listUsers.sort();
+// for each  user in listUsers
+// {
+// 	info user;
+// // 	input.Referee:ui.add(user);
+// // 	input.Referrer:ui.add(user);
+// }
+input.Date_of_Referral = zoho.currentdate;

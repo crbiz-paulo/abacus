@@ -1,0 +1,303 @@
+//Parameters: Int contactID
+// Variable Declaration
+customGroupMap = {"In_House_Technology":"In House Technology","Leading_Ladies":"Leading Ladies","Board_Member":"Board Member","Firm_Administrator":"Firm Operations and Administration","HR":"Human Resources","Managing_Partner":"Managing Partners","Marketing":"Marketing and Business Development","Real_Estate":"Real Estate"};
+customGroup = List();
+partitionIDList = List();
+isRegionSet = false;
+scopeID = "";
+contactEmail = "";
+inviteParam = Map();
+member = List();
+supportemail = "support@crbiz.com.au";
+//
+// Get the Scope ID from Connect
+response = invokeurl
+[
+	url :"https://connect.zoho.com/pulse/api/allScopes"
+	type :GET
+	connection:"invitememberinconnectgroup"
+];
+//scopeID = "4302424000000889083"; <-- External Abacus Scope ID as of 20200914
+//
+// Dynamically Get Scope ID for Abacus
+scopeList = response.get("allScopes").get("scopes");
+for each  scope in scopeList
+{
+	if(scope.get("name").equalsIgnoreCase("Abacus Connect") == true)
+	{
+		scopeID = scope.get("id");
+		break;
+	}
+}
+//
+// Check Scope ID if present
+if(scopeID.isEmpty() == true)
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :supportemail
+		subject :"[Connect Member Update]"
+		message :"There is an error. Reason: No Scope ID"
+	]
+	return;
+}
+//
+// Debug Code .::. For Removal
+//contactID = "4302424000000313062"; // <-- This is Sean;
+//
+// Get the Corresponding Contact first
+contact = zoho.crm.getRecordById("Contacts",contactID);
+if(contact.isNull() == false && contact.isEmpty() == false)
+{
+	contactEmail = contact.get("Email");
+	for each  customItem in customGroupMap.keys()
+	{
+		// Check if custom list is set to TRUE
+		if(contact.get(customItem) == true)
+		{
+			//
+			// Set custom item as there can be multiple items
+			customGroup.add(customGroupMap.get(customItem));
+		}
+	}
+}
+else
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :supportemail
+		subject :"[Connect Member Update]"
+		message :"There is an error. Reason: Contact is Empty or NULL"
+	]
+	return;
+}
+//
+// Get all members from Connect Network
+response = invokeurl
+[
+	url :"https://connect.zoho.com/pulse/api/orgMembers?scopeID=" + scopeID
+	type :GET
+	connection:"invitememberinconnectgroup"
+];
+//
+// Check for valid response
+if(response.isNull() == true || response.isEmpty() == true)
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :supportemail
+		subject :"[Connect Member Update]"
+		message :"There is an error. Reason: Unable to get members from the network"
+	]
+	return;
+}
+//
+// Match Contact CRM to Connect Network Member List
+memberList = response.get("orgMembers").get("usersDetails");
+for each  item in memberList
+{
+	if(contactEmail.equalsIgnoreCase(item.get("emailId")) == true)
+	{
+		member = item;
+		break;
+	}
+}
+//
+// Get the Group List from Connect
+response = invokeurl
+[
+	url :"https://connect.zoho.com/pulse/api/allGroups?scopeID=" + scopeID
+	type :GET
+	connection:"invitememberinconnectgroup"
+];
+//
+// Check for valid response
+if(response.isNull() == true || response.isEmpty() == true)
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :supportemail
+		subject :"[Connect Member Update]"
+		message :"There is an error. Reason: Invalid Groups in Connect"
+	]
+	return;
+}
+//
+// Check if we got a valid member .::. if there is none, it must be a new member
+if(member.isNull() == true || member.isEmpty() == true)
+{
+	//
+	// Set the Applicable Partition ID
+	groupList = response.get("allGroups").get("groups");
+	for each  group in groupList
+	{
+		// Validate Group Status First
+		if(group.get("status") != "ACTIVE")
+		{
+			continue;
+		}
+		// Get the Group Name	
+		groupName = group.get("name");
+		//
+		// Compare with Region First
+		if(isRegionSet == false && groupName.equalsIgnoreCase(contact.get("Region")) == true)
+		{
+			// Asia North America
+			// EMEA
+			// Latin America
+			// Asia Pacific
+			//
+			// Set the Partition ID
+			partitionIDList.add(group.get("id"));
+			isRegionSet = true;
+			continue;
+		}
+		// 
+		// Process the Applicable Member Listing .::. There can be multiple
+		if(customGroup.contains(groupName))
+		{
+			// Set the Partition ID
+			partitionIDList.add(group.get("id"));
+		}
+	}
+	//
+	// Set Invite Parameters
+	inviteParam.put("scopeID",scopeID);
+	inviteParam.put("emailIds",contact.get("Email"));
+	inviteParam.put("partitionIds",toText(partitionIDList,",").toString());
+	//
+	// Invite Users and Add to Group
+	response = invokeurl
+	[
+		url :"https://connect.zoho.com/pulse/api/inviteUsersToNetwork"
+		type :POST
+		parameters:inviteParam
+		connection:"invitememberinconnectgroup"
+	];
+}
+else
+{
+	//
+	// Set the Applicable Partition ID
+	groupList = response.get("allGroups").get("groups");
+	for each  group in groupList
+	{
+		// Validate Group Status First
+		if(group.get("status") != "ACTIVE")
+		{
+			continue;
+		}
+		// Get the Group Variables	
+		groupName = group.get("name");
+		partitionID = group.get("id");
+		//
+		// Try to remove user from the group
+		// Note: I let the error happen.
+		response = invokeurl
+		[
+			url :"https://connect.zoho.com/pulse/api/removeUserFromGroup?scopeID=" + scopeID + "&partitionId=" + partitionID + "&userId=" + member.get("zuid")
+			type :POST
+			connection:"invitememberinconnectgroup"
+		];
+		info groupName + ": " + response;
+		// Process the Applicable Member Listing .::. There can be multiple
+		if(customGroup.contains(groupName) || isRegionSet == false && groupName.equalsIgnoreCase(contact.get("Region")) == true)
+		{
+			//
+			// Add user in the group again
+			response = invokeurl
+			[
+				url :"https://connect.zoho.com/pulse/api/addUsersToGroup?scopeID=" + scopeID + "&partitionId=" + partitionID + "&memberIds=" + member.get("zuid")
+				type :POST
+				connection:"invitememberinconnectgroup"
+			];
+			info groupName + ": " + response;
+			//
+			// Update region trigger 
+			if(isRegionSet == false && groupName.equalsIgnoreCase(contact.get("Region")) == true)
+			{
+				// Asia North America
+				// EMEA
+				// Latin America
+				// Asia Pacific
+				//
+				// Set the Partition ID
+				isRegionSet = true;
+			}
+		}
+	}
+	//*******************
+	// Update Member Profile
+	//*******************
+	//
+	// Set Custom Value Parameters
+	languages = contact.get("Languages");
+	if(languages.isNull() == false && languages.isEmpty() == false)
+	{
+		languages = languages.replaceAll(",",", ");
+	}
+	profileIndustry = contact.get("Profile_Industry_Specialties");
+	if(profileIndustry.isNull() == false && profileIndustry.isEmpty() == false)
+	{
+		profileIndustry = profileIndustry.replaceAll(",",", ");
+	}
+	memberType = contact.get("Member_Type");
+	if(memberType.isNull() == false && memberType.isEmpty() == false)
+	{
+		specialties = contact.get("Profile_Accounting_Specialties");
+	}
+	else
+	{
+		specialties = contact.get("Profile_Legal_Specialties");
+	}
+	if(specialties.isEmpty() == false)
+	{
+		specialties = specialties.replaceAll(",",", ");
+	}
+	//
+	// Todo: Hardcoded custom value IDs
+	customStr = "[" + {"fieldId":"407847000000002356","recordValue":contact.get("First_Name")} + "," + {"fieldId":"407847000000002362","recordValue":contact.get("Last_Name")} + "," + {"fieldId":"407847000000002380","recordValue":contact.get("Region")} + "," + {"fieldId":"407847000000002398","recordValue":languages} + "," + {"fieldId":"407847000000002374","recordValue":contact.get("Mobile")} + "," + {"fieldId":"407847000000002404","recordValue":contact.get("Member_Type")} + "," + {"fieldId":"407847000000002410","recordValue":specialties} + "," + {"fieldId":"407847000000002416","recordValue":profileIndustry} + "," + {"fieldId":"407847000000002386","recordValue":contact.get("Mailing_Country")} + "," + {"fieldId":"407847000000035031","recordValue":contact.get("Mailing_City")} + "," + {"fieldId":"407847000000035037","recordValue":contact.get("Mailing_State")} + "]";
+	info customStr;
+	customLst = customStr.toJSONList();
+	//
+	// Set Invoke Parameters
+	memberParam = Map();
+	memberParam.put("scopeID",scopeID);
+	memberParam.put("userId",member.get("zuid"));
+	memberParam.put("displayName",contact.get("Full_Name"));
+	memberParam.put("customFields",customLst);
+	//
+	// Update User Profile
+	response = invokeurl
+	[
+		url :"https://connect.zoho.com/pulse/api/saveUserProfile"
+		type :POST
+		parameters:memberParam
+		connection:"invitememberinconnectgroup"
+	];
+	info response;
+	image = invokeurl
+	[
+		url :"https://www.zohoapis.com/crm/v2/Contacts/" + contact.get("id") + "/photo"
+		type :GET
+		connection:"crmimage"
+	];
+	//
+	// Update User Image
+	imgparams = List();
+	imgparams.add({"paramName":"photoContent","content":image});
+	imgparams.add({"paramName":"scopeID","content":scopeID,"stringPart":"true"});
+	imgparams.add({"paramName":"userId","content":member.get("zuid"),"stringPart":"true"});
+	profileImg = invokeurl
+	[
+		url :"https://connect.zoho.com/pulse/nativeapi/uploadUserImage"
+		type :PUT
+		files:imgparams
+		connection:"invitememberinconnectgroup"
+	];
+	info profileImg;
+}

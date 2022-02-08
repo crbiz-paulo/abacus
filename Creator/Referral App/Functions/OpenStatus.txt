@@ -1,0 +1,7 @@
+void OpenStatus(int id)
+{
+	dateToday = today;
+	referral = Add_Referral[Referral_ID == id];
+	referral.Status="Open";
+	referral.Date_of_Closure=null;
+}

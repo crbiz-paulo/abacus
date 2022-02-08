@@ -1,0 +1,25 @@
+listUsers = List();
+users = zoho.crm.getRecords("Contacts");
+usersJSON = users.toJSONList();
+for each  user in usersJSON
+{
+	if(user.get("Contact_Type") == "Member")
+	{
+		listUsers.add(user.get("Full_Name"));
+		if(input.Referee_ID == user.get("Email"))
+		{
+			input.Referee = user.get("Full_Name");
+		}
+		if(input.Referrer_ID == user.get("Email"))
+		{
+			input.Referrer = user.get("Full_Name");
+		}
+	}
+	//	input.Referee_ID = user.get("Email");
+}
+listUsers.sort();
+for each  user in listUsers
+{
+	input.Referee:ui.add(user);
+	input.Referrer:ui.add(user);
+}

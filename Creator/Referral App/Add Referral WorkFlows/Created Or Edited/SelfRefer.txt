@@ -1,0 +1,5 @@
+if(input.Referrer_ID == input.Referee_ID)
+{
+	alert "You can't refer to yourself";
+	cancel submit;
+}

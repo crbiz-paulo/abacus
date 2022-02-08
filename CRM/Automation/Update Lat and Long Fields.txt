@@ -1,0 +1,45 @@
+//Parameters: Int accountId
+account = zoho.crm.getRecordById("Accounts",accountId);
+updateMap = Map();
+listAddress = list();
+address1 = account.get("Billing_Street");
+if(!isnull(address1))
+{
+	listAddress.add(address1);
+}
+address2 = account.get("Billing_Street_2");
+if(!isnull(address2))
+{
+	listAddress.add(address2);
+}
+city = account.get("Billing_City");
+if(!isnull(city))
+{
+	listAddress.add(city);
+}
+state = account.get("Billing_State");
+if(!isnull(state))
+{
+	listAddress.add(state);
+}
+code = account.get("Billing_Code");
+if(!isnull(code))
+{
+	listAddress.add(code);
+}
+country = account.get("Bill_Country");
+if(!isnull(country))
+{
+	listAddress.add(country);
+}
+fullAddress = listAddress.toString();
+geocode = zoho.map.geoCode(fullAddress);
+status = geocode.get("status");
+if(status == "success")
+{
+	geoLong = geocode.get("longitude");
+	geoLat = geocode.get("latitude");
+	updateMap.put("Lat",geoLat);
+	updateMap.put("Long",geoLong);
+	update = zoho.crm.updateRecord("Accounts",accountId,updateMap);
+}

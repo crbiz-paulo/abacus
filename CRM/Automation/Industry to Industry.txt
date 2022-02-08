@@ -1,0 +1,8 @@
+//Parameters: Int accID, String val
+mp = Map();
+mp.put("Industry",val);
+relCon = zoho.crm.getRelatedRecords("Contacts","Accounts",accID);
+for each  con in relCon
+{
+	upd = zoho.crm.updateRecord("Contacts",con.get("id"),mp);
+}

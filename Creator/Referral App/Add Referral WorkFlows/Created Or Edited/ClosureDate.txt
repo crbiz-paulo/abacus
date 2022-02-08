@@ -1,0 +1,8 @@
+if(Status != "Open")
+{
+	input.Date_of_Closure = zoho.currentdate;
+}
+else
+{
+	input.Date_of_Closure = null;
+}

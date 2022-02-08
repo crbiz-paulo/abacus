@@ -1,0 +1,8 @@
+disable Referrer_Firm;
+disable Referee_Firm;
+disable Status;
+hide Referee_First_Name;
+hide Date_of_Referral;
+hide Date_of_Closure;
+hide Referrer_ID;
+hide Referee_ID;

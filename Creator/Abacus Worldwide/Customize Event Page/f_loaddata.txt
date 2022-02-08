@@ -1,0 +1,6 @@
+result = Customize_event_page[ID = Custom_event_page_id.toNumber()];
+input.Event_ID = result.Event_ID;
+input.Event_name = result.Event_name;
+input.Color = result.Color;
+input.FontColor = result.FontColor;
+input.Logo = result.Logo;

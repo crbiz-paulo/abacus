@@ -1,0 +1,33 @@
+vEventData = Customize_event_page[ID == input.EventCsId.toNumber()];
+vEventID = vEventData.Event_ID.toNumber();
+input.iframe = "<iframe style='width:85vw;height:500px' src=\"" + "https://creatorapp.zohopublic.com/julio_abacusworldwide/event-listing/page-embed/Page_test/AtKadj6u2BJzS19qvx6GQZKFYHSrtg75mhwkHUC2at8pvEYQE8F0qO5ym3X5AR2DGfDJGb1BVdxKk6nyfag60A3HPVtxw8OsCsPJ?event_id=" + vEventID.toString() + "\"></iframe>";
+input.Iframe_code = "<iframe  width=\"100%\" height=\"100%\" src=\"" + "https://creatorapp.zohopublic.com/julio_abacusworldwide/event-listing/page-embed/Page_test/AtKadj6u2BJzS19qvx6GQZKFYHSrtg75mhwkHUC2at8pvEYQE8F0qO5ym3X5AR2DGfDJGb1BVdxKk6nyfag60A3HPVtxw8OsCsPJ?event_id=" + vEventID.toString() + "\"></iframe>";
+input.Url = "https://creatorapp.zohopublic.com/julio_abacusworldwide/event-listing/page-embed/Page_test/AtKadj6u2BJzS19qvx6GQZKFYHSrtg75mhwkHUC2at8pvEYQE8F0qO5ym3X5AR2DGfDJGb1BVdxKk6nyfag60A3HPVtxw8OsCsPJ?event_id=" + vEventID.toString();
+contacts = zoho.crm.getRelatedRecords("Contacts","Campaigns",vEventID);
+for each  con in contacts
+{
+	vRecord_Image = con.get("Record_Image");
+	vmemberinfo = con.get("$member_info");
+	info vmemberinfo.get("Service_Status");
+	vContactId = con.get("id");
+	if(!isNull(vRecord_Image))
+	{
+		vlistedContact = Attendees[Contact = vContactId];
+		if(isNull(vlistedContact.Contact))
+		{
+			response = invokeurl
+			[
+				url :"https://www.zohoapis.com/crm/v2/Contacts/" + vContactId + "/photo"
+				type :GET
+				connection:"zoho_crm"
+			];
+			response.setParamName("file");
+			registerIt = insert into Attendees
+			[
+				Contact=vContactId
+				Image=response
+				Added_User=zoho.loginuser
+			];
+		}
+	}
+}

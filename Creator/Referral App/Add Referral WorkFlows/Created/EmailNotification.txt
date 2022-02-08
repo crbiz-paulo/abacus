@@ -1,0 +1,18 @@
+if(Send_Mail)
+{
+	admin = "connect@abacusworldwide.org";
+	referrerEmail = input.Referrer_ID;
+	refereeEmail = input.Referee_ID;
+	carbonCopy = List();
+	carbonCopy.add(referrerEmail);
+	carbonCopy.add("team@abacusworldwide.org");
+	sendmail
+	[
+		from :admin
+		to :refereeEmail
+		cc:carbonCopy
+		reply to :referrerEmail
+		subject :"Referral from Abacus Worldwide Member"
+		message :"Dear " + input.Referee_First_Name + ", <br><br>I need assistance regarding our client " + input.Client + " for the purpose of " + input.Subject_field + ".<br><br>" + input.Description + "<br><br>Please let me know if you are able to assist?<br><br> Regards, <br><br>" + input.Referrer + "<br>" + input.Referrer_Firm + "<br>" + input.Referrer_ID
+	]
+}

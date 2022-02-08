@@ -1,0 +1,42 @@
+if(input.Referrer_ID == zoho.loginuserid)
+{
+	disable Referrer_Firm;
+	disable Referee_Firm;
+	disable Status;
+	hide Referee_First_Name;
+	hide Date_of_Referral;
+	hide Date_of_Closure;
+	hide Referrer_ID;
+	hide Referee_ID;
+}
+else if(input.Referee_ID == zoho.loginuserid)
+{
+	disable Referrer_Firm;
+	disable Referee_Firm;
+	disable Referrer;
+	disable Referee;
+	disable Client;
+	disable Subject_field;
+	disable Description;
+	hide Referee_First_Name;
+	hide Date_of_Referral;
+	hide Date_of_Closure;
+	hide Referrer_ID;
+	hide Referee_ID;
+}
+else
+{
+	disable Referrer_Firm;
+	disable Referee_Firm;
+	disable Description;
+	disable Status;
+	disable Referrer;
+	disable Referee;
+	disable Client;
+	disable Subject_field;
+	hide Referee_First_Name;
+	hide Date_of_Referral;
+	hide Date_of_Closure;
+	hide Referrer_ID;
+	hide Referee_ID;
+}

@@ -1,0 +1,20 @@
+//Zoho Backstage
+params = Map();
+params.put("Type","Zoho Backstage");
+loadCampaigns = zoho.crm.searchRecords("Campaigns","(Type:equals:Zoho Backstage)");
+for each  ev in loadCampaigns
+{
+	vCampaign_Name = ev.get("Campaign_Name");
+	vID = ev.get("id");
+	vCheck = Customize_event_page[Event_ID = vID];
+	if(isNull(vCheck.Event_ID))
+	{
+		vvar = insert into Customize_event_page
+		[
+			Event_ID=vID
+			Event_name=vCampaign_Name
+			Added_User=zoho.loginuser
+		];
+	}
+}
+//info loadCampaigns;

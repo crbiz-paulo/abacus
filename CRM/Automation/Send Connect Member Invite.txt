@@ -1,0 +1,130 @@
+//Parameters: Int contactID
+// Variable Declaration
+customGroupMap = {"In_House_Technology":"Technology Trends","Leading_Ladies":"Leading Ladies","Board_Member":"Board Member","Firm_Administrator":"Firm Operations and Administration","HR":"Human Resources","Managing_Partner":"Managing Partners","Marketing":"Marketing and Business Development","Real_Estate":"Real Estate","TASK":"TASK","Balanced_Perspective":"Balanced Perspective","Vantage_Worldwide":"Vantage_Worldwide","Tax":"Tax","Audit":"Audit","M_and_A":"M&A/Corporate Finance","Litigation_Services":"Litigation Services and Litigation Support"};
+customGroup = List();
+partitionIDList = List();
+inviteParam = Map();
+isRegionSet = false;
+scopeID = "";
+supportemail = "support@crbiz.com.au";
+//
+// Get the Scope ID from Connect
+response = invokeurl
+[
+	url :"https://connect.zoho.com/pulse/api/allScopes"
+	type :GET
+	connection:"invitememberinconnectgroup"
+];
+//scopeID = "407847000000002002"; <-- External Abacus Scope ID as of 20200914
+//
+// Dynamically Get Scope ID for Abacus
+scopeList = response.get("allScopes").get("scopes");
+for each  scope in scopeList
+{
+	if(scope.get("name").equalsIgnoreCase("Abacus Connect") == true)
+	{
+		scopeID = scope.get("id");
+		break;
+	}
+}
+//
+// Check Scope ID if present
+if(scopeID.isEmpty() == true)
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :supportemail
+		subject :"[Connect Member Invite]"
+		message :"There is an error. Reason: No Scope ID"
+	]
+	return;
+}
+// 
+// Debug Code .::. For Removal
+//contactID = "4302424000001811001";
+// <- This is Sean
+//
+// Get the Corresponding Contact first
+contact = zoho.crm.getRecordById("Contacts",contactID);
+if(contact.isNull() == false && contact.isEmpty() == false)
+{
+	for each  customItem in customGroupMap.keys()
+	{
+		// Check if custom list is set to TRUE
+		if(contact.get(customItem) == true)
+		{
+			//
+			// Set custom item as there can be multiple items
+			customGroup.add(customGroupMap.get(customItem));
+		}
+	}
+}
+else
+{
+	sendmail
+	[
+		from :zoho.adminuserid
+		to :supportemail
+		subject :"[Connect Member Invite]"
+		message :"There is an error. Reason: Contact is Empty or NULL"
+	]
+	return;
+}
+//
+// Get the Group List from Connect
+response = invokeurl
+[
+	url :"https://connect.zoho.com/pulse/api/allGroups?scopeID=" + scopeID
+	type :GET
+	connection:"invitememberinconnectgroup"
+];
+//
+// Set the Applicable Partition ID
+groupList = response.get("allGroups").get("groups");
+for each  group in groupList
+{
+	// Validate Group Status First
+	if(group.get("status") != "ACTIVE")
+	{
+		continue;
+	}
+	// Get the Group Name	
+	groupName = group.get("name");
+	//
+	// Compare with Region First
+	if(isRegionSet == false && groupName.equalsIgnoreCase(contact.get("Region")) == true)
+	{
+		// Asia North America
+		// EMEA
+		// Latin America
+		// Asia Pacific
+		//
+		// Set the Partition ID
+		partitionIDList.add(group.get("id"));
+		isRegionSet = true;
+		continue;
+	}
+	// 
+	// Process the Applicable Member Listing .::. There can be multiple
+	if(customGroup.contains(groupName))
+	{
+		// Set the Partition ID
+		partitionIDList.add(group.get("id"));
+	}
+}
+//
+// Set Invite Parameters
+inviteParam.put("scopeID",scopeID);
+inviteParam.put("emailIds",contact.get("Email"));
+inviteParam.put("partitionIds",toText(partitionIDList,",").toString());
+//
+// Invite Users and Add to Group
+response = invokeurl
+[
+	url :"https://connect.zoho.com/pulse/api/inviteUsersToNetwork"
+	type :POST
+	parameters:inviteParam
+	connection:"invitememberinconnectgroup"
+];
+info response;
